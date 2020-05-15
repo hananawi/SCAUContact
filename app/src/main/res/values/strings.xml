@@ -1,0 +1,33 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="app_name">SCAUContact</string>
+    <string name="action_settings">Settings</string>
+    <!-- Strings used for fragments for navigation -->
+    <string name="first_fragment_label">First Fragment</string>
+    <string name="second_fragment_label">Second Fragment</string>
+    <string name="edit_contact_fragment_label">Edit Contact Fragment</string>
+    <string name="next">Next</string>
+    <string name="previous">Previous</string>
+
+    <string name="hello_first_fragment">Hello first fragment</string>
+    <string name="hello_second_fragment">Hello second fragment. Arg: %1$s</string>
+    <string name="contact_hint">联系人姓名</string>
+    <string name="group">组别</string>
+    <string name="comment">备注</string>
+    <string name="address">地址</string>
+    <string name="number">电话号码</string>
+    <string name="contact">姓名</string>
+
+<!--    <array name="contact_avatar">-->
+<!--        <item>@drawable/img_badminton</item>-->
+<!--    </array>-->
+    
+    <string-array name="group_spinner">
+
+    </string-array>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="first_fragment_tag">FirstFragment</string>
+    <string name="app_label">SCAUContact</string>
+    <string name="search_hint">请输入联系人姓名或号码</string>
+</resources>
