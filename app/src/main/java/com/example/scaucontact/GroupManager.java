@@ -2,18 +2,21 @@ package com.example.scaucontact;
 
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.Set;
 
 public class GroupManager {
-	private ArrayList<Group>ateam = new ArrayList<Group>();//所有分组的集合存储单个分组
+	private ArrayList<Group>ateam = new ArrayList<>();//所有分组的集合存储单个分组
 
-	public GroupManager(Set<String> groupNameSet){
-//		addSingleteam(new Group("家人"));
-//		addSingleteam(new Group("朋友"));
-		for(String i: groupNameSet){
+	public GroupManager(ArrayList<String> groupNameArray){
+//		groupNameArray.add("家人");
+//		groupNameArray.add("朋友");
+		for(String i: groupNameArray){
 			addSingleteam(new Group(i));
 		}
 	}
+
+	public  GroupManager(){}
 
 	public ArrayList<Group> getAteam() {
 		return ateam;
@@ -46,5 +49,21 @@ public class GroupManager {
 			}
 		}
 		return false;
+	}
+
+	public String[] getAllGroupName(){
+		String[] ret = new String[ateam.size()];
+		for(int i = 0; i < ateam.size(); i++){
+			ret[i] = ateam.get(i).getTeamname();
+		}
+		return ret;
+	}
+
+	public LinkedList<Contact> getAllContacts(){
+		LinkedList<Contact> ret = new LinkedList<>();
+		for(Group i: ateam){
+			ret.addAll(i.getSteam());
+		}
+		return ret;
 	}
 }

@@ -1,24 +1,28 @@
 package com.example.scaucontact;
 
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
+import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.EditText;
-import android.widget.Spinner;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
+import androidx.core.content.res.ResourcesCompat;
 import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentTransaction;
-import androidx.navigation.fragment.NavHostFragment;
-
-import com.google.android.material.snackbar.Snackbar;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -29,8 +33,6 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
 
 interface GetContactInfo{
     Contact work();
@@ -41,14 +43,20 @@ public class SecondFragment extends Fragment
 
     private EditText name;
     private EditText phone;
+    private EditText email;
+    private EditText workUnit;  // :)
+    private EditText address;
+    private EditText zipCode;
+    private EditText remarks;
+
     private GetContactInfo getContactInfo;
-    private FragmentTransaction transaction;
-    private LinkedList<Contact> mContactList;
     private Contact contact;
-    private Spinner spinner;
-    private String groupLabel;
-    private EditText newGroupName;
+//    private Spinner spinner;
     private GroupManager groupManager;
+    private Button chooseGroup;
+    private ArrayList<Integer> selectedItems;
+    private boolean[] checkedItems;
+    private View view;
 
     public void setGetContactInfo(GetContactInfo getContactInfo){
         this.getContactInfo = getContactInfo;
@@ -70,118 +78,89 @@ public class SecondFragment extends Fragment
 
         super.onViewCreated(view, savedInstanceState);
 
+        changeOptionsMenu(((MainActivity)getActivity()).menu);
+
+        this.view = view;
+        getHandles(view);  // 在视图中找到相应的控件
+
         groupManager = ((MainActivity)getActivity()).groupManager;
 
-        newGroupName = view.findViewById(R.id.new_group_name);
-        newGroupName.setVisibility(View.INVISIBLE);
+// spinner view
+//        newGroupName = view.findViewById(R.id.new_group_name);
+//        newGroupName.setVisibility(View.INVISIBLE);
 
-        spinner = view.findViewById(R.id.group_spinner);
-        spinner.setOnItemSelectedListener(this);
+//        spinner = view.findViewById(R.id.group_spinner);
+//        spinner.setOnItemSelectedListener(this);
+
 //        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(getActivity(),
 //                R.array.group_spinner, android.R.layout.simple_spinner_item);
-        ArrayList<CharSequence> arrayList = new ArrayList<>();
-        for(Group i: groupManager.getAteam()){
-            arrayList.add(i.getTeamname());
-        }
-        arrayList.add("新增");
-        ArrayAdapter<CharSequence> adapter = new ArrayAdapter<>(getContext(),
-                android.R.layout.simple_spinner_item, arrayList);
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinner.setAdapter(adapter);
+//        ArrayList<CharSequence> arrayList = new ArrayList<>();
+//        for(Group i: groupManager.getAteam()){
+//            arrayList.add(i.getTeamname());
+//        }
+//        arrayList.add("新增");
+//        ArrayAdapter<CharSequence> adapter = new ArrayAdapter<>(getContext(),
+//                android.R.layout.simple_spinner_item, arrayList);
+//        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+//        spinner.setAdapter(adapter);
 //        adapter.notifyDataSetChanged();
 
-        name = view.findViewById(R.id.edit_name);
-        phone = view.findViewById(R.id.edit_phone);
+        createAlertDialog();  // 设置对话窗口，用于选择分组
 
-        if(this.getContactInfo != null){
+        if(this.getContactInfo != null){  // 编辑已有的联系人
             contact = getContactInfo.work();
             name.setText(contact.getName());
             phone.setText(contact.getPhone());
         }
-        if(contact == null){
-            view.findViewById(R.id.delete_confirm).setVisibility(View.INVISIBLE);
-        }
 
-        transaction = getActivity().getSupportFragmentManager().beginTransaction();
-        view.findViewById(R.id.save_confirm).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-//                NavHostFragment.findNavController(SecondFragment.this)
-//                        .navigate(R.id.action_SecondFragment_to_FirstFragment);
-//                Snackbar.make(view, "保存功能待完成", Snackbar.LENGTH_LONG).setAction("nmsl", null).show();
-
-//                readExternalFile("nmsl.txt");
-
-                String tmp = newGroupName.getText().toString();
-                if(!tmp.equals("")){  // 新建了组别
-                    groupLabel = tmp;
-                    groupManager.addSingleteam(new Group(groupLabel));
-                }
-                if(contact != null){  // 编辑现有的联系人
-                    contact.setName(name.getText().toString());
-                    contact.setPhone(phone.getText().toString());
-                    if(!tmp.equals("")){  // 新建了组别
-                        contact.setGroupName(groupLabel);
-                    }
-                }
-//                contact.setGroupName();
-
-                boolean flag =  writeExternalFile("ContactInfo.txt");
-                if(flag){
-                    InputMethodManager imm = (InputMethodManager)getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
-                    if(imm != null && imm.isActive()){
-//                        imm.toggleSoftInput(0, InputMethodManager.HIDE_NOT_ALWAYS);  打开软件盘
-                        imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
-                    }
-                    toastPrint("联系人创建成功");
-//                    NavHostFragment.findNavController(SecondFragment.this)
-//                            .navigate(R.id.action_SecondFragment_to_FirstFragment);
-                    ((MainActivity)getActivity()).init();
-//                    transaction.replace(R.id.fragment_container, new FirstFragment(null));
-//                    transaction.addToBackStack(null);
-//                    transaction.commit();
-                }
-            }
-        });
-
-        view.findViewById(R.id.delete_confirm).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                contact.setGroupName("delete!@#$%");
-                writeExternalFile("ContactInfo.txt");
-                ((MainActivity)getActivity()).init();
-//                transaction.replace(R.id.fragment_container, new FirstFragment(null));
-//                transaction.addToBackStack(null);
-//                transaction.commit();
-            }
-        });
+//        view.findViewById(R.id.save_confirm).setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View view) {
+////                NavHostFragment.findNavController(SecondFragment.this)
+////                        .navigate(R.id.action_SecondFragment_to_FirstFragment);
+////                Snackbar.make(view, "保存功能待完成", Snackbar.LENGTH_LONG).setAction("nmsl", null).show();
+//
+////                readExternalFile("nmsl.txt");
+//
+////                if(contact == null){  // 新增的联系人
+////                    contact = getContactInfo(0);
+////                }
+////                else{  // 编辑已有的联系人
+////                    contact = getContactInfo(1);
+////                }
+////                for(int i: selectedItem){  // 把联系人添加进选中的组别中
+////                    Group tmp = groupManager.getAteam().get(i);
+////                    if(!tmp.getSteam().contains(contact)){
+////                        tmp.addPerson(contact);
+////                    }
+////                }
+////
+////                boolean flag =  writeExternalFile("ContactInfo.txt");
+////                if(flag){
+////                    InputMethodManager imm = (InputMethodManager)getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+////                    if(imm != null && imm.isActive()){
+//////                        imm.toggleSoftInput(0, InputMethodManager.HIDE_NOT_ALWAYS);  // 打开软件盘
+////                        imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+////                    }
+////                    toastPrint("联系人创建成功");
+//////                    NavHostFragment.findNavController(SecondFragment.this)
+//////                            .navigate(R.id.action_SecondFragment_to_FirstFragment);
+////                    ((MainActivity)getActivity()).init();
+//////                    transaction.replace(R.id.fragment_container, new FirstFragment(null));
+//////                    transaction.addToBackStack(null);
+//////                    transaction.commit();
+////                }
+//            }
+//        });
     }
 
 
 //    私有文件：存储在特定于应用的目录中的文件（使用 Context.getExternalFilesDir() 来访问）。这些文件在用户卸载您的应用时会被清除。
 //    尽管这些文件在技术上可被用户和其他应用访问（因为它们存储在外部存储上），但它们不能为应用之外的用户提供价值。
 //    可以使用此目录来存储您不想与其他应用共享的文件。
-    private boolean readExternalFile(String FileName){
-//        toastPrint(((MainActivity)getActivity()).getExternalFilesDir(null).toString());
-        File file = new File(getActivity().getExternalFilesDir(null), FileName);
-        try(FileInputStream fis = new FileInputStream(file);
-            InputStreamReader isr = new InputStreamReader(fis, StandardCharsets.UTF_8);
-            BufferedReader br = new BufferedReader(isr)){
-            String line;
-            while((line = br.readLine()) != null){
-                String[] info = line.split("\\s+");
-            }
-        }
-        catch (Exception e){
-            toastPrint("Read File Failed:(");
-//            e.printStackTrace();
-            return false;
-        }
-        return true;
-    }
-
+// Context.openFileInput(fileName)  储存在内部存储  /data/data/<packagename>/files/
+// Context.getExternalFilesDir(fileType)  储存在内部存储(外部私有文件)
     private boolean writeExternalFile(String FileName){
-        mContactList = ((MainActivity)getActivity()).mContactList;
         File file = new File(getActivity().getExternalFilesDir(null), FileName);
         try {
             if(!file.exists()){
@@ -197,26 +176,30 @@ public class SecondFragment extends Fragment
             BufferedWriter bw = new BufferedWriter(osw)){
             String line;
 
-            for(Contact i: mContactList){
-                if(i.getGroupName().equals("delete!@#$%")) continue;
-                line = i.getName() + "\t";
-                line += i.getPhone() + "\t";
-                line += i.getGroupName() + "\t";
-                line += i.getAddress() + "\t";
-                line += i.getRemarks() + "\t";
-                bw.write(line);
+            int n = 0;
+            for(Group i: groupManager.getAteam()){
+                for(Contact j: i.getSteam()){
+                    if(j.getDelete()) n++;
+                }
+            }
+
+            for(Group i: groupManager.getAteam()){
+                bw.write(i.getTeamname()+"\t"+(i.getSteam().size()-n));
                 bw.newLine();
+                for(Contact j: i.getSteam()){
+                    if(j.getDelete()) continue;
+                    line = j.getName()+"\t";
+                    line += j.getPhone()+"\t";
+                    line += j.getEmail()+"\t";
+                    line += j.getWorkUnit()+"\t";
+                    line += j.getAddress()+"\t";
+                    line += j.getZipCode()+"\t";
+                    line += j.getRemarks()+"\t";
+                    // birthday
+                    bw.write(line);
+                    bw.newLine();
+                }
             }
-            if(getContactInfo != null){  // 修改已有联系人，而不是新增
-                return true;
-            }
-//            Field[] fields = contact.getClass().getFields();
-            Contact contact = getContactInfo();
-            line = contact.getName() + "\t";
-            line += contact.getPhone() + "\t";
-            line += groupLabel + "\t";
-            bw.write(line);
-            bw.newLine();
             return true;
         }
         catch (Exception e){
@@ -225,27 +208,170 @@ public class SecondFragment extends Fragment
         }
     }
 
-    private Contact getContactInfo(){
+    private Contact getContactInfo(int mode){
 //        TypedArray avatarResources = getResources().obtainTypedArray(R.array.contact_avatar);
 
-        return new Contact(this.name.getText().toString(),
-                            this.phone.getText().toString(), 0);
+        String mName = name.getText().toString();
+        String mPhone = phone.getText().toString();
+        String mEmail = email.getText().toString();
+        String mWorkUnit = workUnit.getText().toString();
+        String mAddress = address.getText().toString();
+        String mZipCode = zipCode.getText().toString();
+        String mRemarks = remarks.getText().toString();
+        if(mode == 0){  // 新建联系人
+            return new Contact(mName, mPhone, mEmail, mWorkUnit, mAddress, mZipCode, mRemarks);
+        }
+        else{  // 编辑现有联系人
+            contact.setName(mName);
+            contact.setPhone(mPhone);
+            contact.setEmail(mEmail);
+            contact.setWorkUnit(mWorkUnit);
+            contact.setAddress(mAddress);
+            contact.setZipCode(mZipCode);
+            contact.setRemarks(mRemarks);
+            return contact;
+        }
+    }
+
+    private void getHandles(View view){
+        name = view.findViewById(R.id.edit_name);
+        phone = view.findViewById(R.id.edit_phone);
+        email = view.findViewById(R.id.edit_email);
+        workUnit = view.findViewById(R.id.edit_workunit);
+        address = view.findViewById(R.id.edit_address);
+        zipCode = view.findViewById(R.id.edit_zipcode);
+        remarks = view.findViewById(R.id.edit_remark);
+        chooseGroup = view.findViewById(R.id.choose_group);
+    }
+
+    private void createAlertDialog(){
+        selectedItems = new ArrayList<>();
+        checkedItems = new boolean[groupManager.getAteam().size()+1];
+        chooseGroup.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+                builder.setTitle("选择分组")
+                        .setPositiveButton("确认", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                String tmp = "";
+                                for(int i: selectedItems){
+                                    tmp += groupManager.getAllGroupName()[i]+", ";
+                                }
+                                ((TextView)view.findViewById(R.id.group_name)).setText(tmp);
+                            }
+                        })
+                        .setNegativeButton("取消", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+
+                            }
+                        })
+                        .setNeutralButton("新建分组", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                final EditText editText = new EditText(getContext());
+                                AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+                                builder.setTitle("创建分组")
+                                        .setView(editText)
+                                        .setPositiveButton("确认", new DialogInterface.OnClickListener() {
+                                            @Override
+                                            public void onClick(DialogInterface dialog, int which) {
+                                                groupManager.addSingleteam(new Group(editText.getText().toString()));
+                                                ((MainActivity)getActivity()).initDrawerMenu();
+                                            }
+                                        })
+                                        .setNegativeButton("取消", new DialogInterface.OnClickListener() {
+                                            @Override
+                                            public void onClick(DialogInterface dialog, int which) {
+
+                                            }
+                                        }).create().show();
+                            }
+                        })
+                        .setMultiChoiceItems(groupManager.getAllGroupName(), checkedItems,
+                                new DialogInterface.OnMultiChoiceClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialog, int which, boolean isChecked) {
+                                        if(isChecked){
+                                            selectedItems.add(which);
+                                            checkedItems[which] = true;
+                                        }
+                                        else if(selectedItems.contains(which)){
+                                            selectedItems.remove(Integer.valueOf(which));
+                                            checkedItems[which] = false;
+                                        }
+                                    }
+                                })
+                        .create().show();
+            }
+        });
     }
 
     public void toastPrint(String message){
         Toast.makeText(getContext(), message, Toast.LENGTH_LONG).show();
     }
 
+    private void changeOptionsMenu(Menu menu){
+        Drawable drawable = ResourcesCompat
+                .getDrawable(getResources(), R.drawable.ic_confirm_button, null);
+        MenuItem confirmButton = menu.findItem(R.id.confirm);
+        MenuItem deleteButton = menu.findItem(R.id.delete);
+
+        confirmButton.setIcon(drawable);
+        confirmButton.setVisible(true);
+        deleteButton.setVisible(true);
+        menu.findItem(R.id.search).setVisible(false);
+        menu.findItem(R.id.action_settings).setVisible(false);
+        menu.findItem(R.id.export_to_csv).setVisible(false);
+
+        confirmButton.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
+            @Override
+            public boolean onMenuItemClick(MenuItem item) {
+                if(contact == null){  // 新增的联系人
+                    contact = getContactInfo(0);
+                }
+                else{  // 编辑已有的联系人
+                    contact = getContactInfo(1);
+                }
+                for(int i: selectedItems){  // 把联系人添加进选中的组别中
+                    Group tmp = groupManager.getAteam().get(i);
+                    if(!tmp.getSteam().contains(contact)){
+                        tmp.addPerson(contact);
+                    }
+                }
+
+                boolean flag =  writeExternalFile("ContactInfo.txt");
+                if(flag){
+                    InputMethodManager imm = (InputMethodManager)getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+                    if(imm != null && imm.isActive()){
+//                        imm.toggleSoftInput(0, InputMethodManager.HIDE_NOT_ALWAYS);  // 打开软件盘
+                        imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+                    }
+                    toastPrint("联系人创建成功");
+//                    NavHostFragment.findNavController(SecondFragment.this)
+//                            .navigate(R.id.action_SecondFragment_to_FirstFragment);
+                    ((MainActivity)getActivity()).init();
+                }
+                return true;
+            }
+        });
+
+        deleteButton.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
+                    @Override
+                    public boolean onMenuItemClick(MenuItem item) {
+                        getContactInfo.work().setDelete(true);
+                        writeExternalFile("ContactInfo.txt");
+                        ((MainActivity)getActivity()).init();
+                        return true;
+                    }
+                });
+    }
+
     @Override
     public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-        groupLabel = parent.getItemAtPosition(position).toString();
-        if(groupLabel.equals("新增")){
-            newGroupName.setVisibility(View.VISIBLE);
-        }
-        else if(contact != null){
-            contact.setGroupName(groupLabel);
-        }
-//        toastPrint(groupLabel);
+//        groupLabel = parent.getItemAtPosition(position).toString();
     }
 
     @Override

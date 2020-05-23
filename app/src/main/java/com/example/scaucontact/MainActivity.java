@@ -1,14 +1,14 @@
 package com.example.scaucontact;
 
 import android.Manifest;
+import android.app.AlertDialog;
 import android.app.SearchManager;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
-
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.android.material.snackbar.Snackbar;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
@@ -16,30 +16,26 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
-import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
-import androidx.navigation.NavController;
-import androidx.navigation.Navigation;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.appcompat.widget.SearchView;
 
 import android.util.Log;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.EditText;
 import android.widget.Toast;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.Set;
-import java.util.concurrent.ExecutionException;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -47,13 +43,14 @@ public class MainActivity extends AppCompatActivity {
     GroupManager groupManager;
     RecyclerView mRecyclerView;
     GroupListAdapter mAdapter;
-    LinkedList<Contact> mContactList = new LinkedList<>();
-    Set<String> groupNameSet = new HashSet<>();
     private static final int WRITE_REQUEST_CODE = 43;
 
     DrawerLayout drawer;
     FragmentTransaction transaction;
     private int mode;
+
+    Menu menu;
+    SearchView searchView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -96,8 +93,6 @@ public class MainActivity extends AppCompatActivity {
 //            }
 //        });
 
-        init();
-
         findViewById(R.id.all_contacts).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {  // 显示所有联系人
@@ -107,8 +102,9 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        Intent intent = getIntent();
-        handleIntent(intent);
+        // another way of search (use between in different activities)
+//        Intent intent = getIntent();
+//        handleIntent(intent);
     }
 
     @Override
@@ -166,10 +162,12 @@ public class MainActivity extends AppCompatActivity {
         try(OutputStream os = getContentResolver().openOutputStream(uri);
             OutputStreamWriter osw = new OutputStreamWriter(os);
             BufferedWriter bw = new BufferedWriter(osw)){
-            for(Contact i: mContactList){
-                bw.write(i.getName()+"\t"+i.getPhone()+"\t"+i.getGroupName()+"\t"
-                        +i.getAddress()+"\t"+i.getRemarks()+"\t");
-                bw.newLine();
+            for(Group i: groupManager.getAteam()){
+                for(Contact j: i.getSteam()){
+                    bw.write(j.getName()+"\t"+j.getPhone()+"\t"+j.getEmail()+"\t"+j.getWorkUnit()
+                            +j.getAddress()+"\t"+j.getZipCode()+"\t"+j.getRemarks()+"\t");
+                    bw.newLine();
+                }
             }
         }
         catch (Exception e){
@@ -181,15 +179,17 @@ public class MainActivity extends AppCompatActivity {
         try(OutputStream os = getContentResolver().openOutputStream(uri);
             OutputStreamWriter osw = new OutputStreamWriter(os);
             BufferedWriter bw = new BufferedWriter(osw)){
-            for(Contact i: mContactList){
-                bw.write("BEGIN:VCARD\n");
-                bw.write("VERSION:2.1\n");
-                bw.write("N:"+i.getName().charAt(0)+";"+i.getName().substring(1)+"\n");
-                bw.write("FN:"+i.getName()+"\n");
-                bw.write("TEL:"+i.getPhone()+"\n");
-                bw.write("ADR:"+i.getAddress()+"\n");
-                bw.write("NOTE:"+i.getRemarks()+"\n");
-                bw.write("END:VCARD\n");
+            for(Group i: groupManager.getAteam()){
+                for(Contact j: i.getSteam()){
+                    bw.write("BEGIN:VCARD\n");
+                    bw.write("VERSION:2.1\n");
+                    bw.write("N:"+j.getName().charAt(0)+";"+j.getName().substring(1)+"\n");
+                    bw.write("FN:"+j.getName()+"\n");
+                    bw.write("TEL:"+j.getPhone()+"\n");
+                    bw.write("ADR:"+j.getAddress()+"\n");
+                    bw.write("NOTE:"+j.getRemarks()+"\n");
+                    bw.write("END:VCARD\n");
+                }
             }
 
         }
@@ -213,34 +213,45 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        Log.d("nmslTag", "onCreateOptionsMenu: MainActivity");
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main, menu);
+        this.menu = menu;
+        searchView = (SearchView)menu.findItem(R.id.search).getActionView();
+        searchView.setIconified(false);
+        init();
         return true;
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        Log.d("nmslTag", "onOptionsItemSelected: MainActivity");
         // Handle action bar item clicks here. The action bar will
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
         //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
-        }
-        else if(id == R.id.action1){  // search by name
-            return true;
-        }
-        else if(id == R.id.action2){  // search by phone
-            return true;
-        }
-        else if(id == R.id.action3){  // export csv file
+        if(id == R.id.export_to_csv){  // export csv file
             createFile("text/plain", "ContactInfo.csv");
             return true;
         }
+        else if(id == R.id.action_settings){
+            final EditText editText = new EditText(this);
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle("创建分组")
+                    .setView(editText)
+                    .setPositiveButton("确认", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            groupManager.addSingleteam(new Group(editText.getText().toString()));
+                            initDrawerMenu();
+                        }
+                    })
+                    .setNegativeButton("取消", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
 
+                        }
+                    }).create().show();
+        }
         return super.onOptionsItemSelected(item);
     }
 
@@ -266,35 +277,50 @@ public class MainActivity extends AppCompatActivity {
     }
 
     void initContactList(){
-        mContactList.clear();
-        groupNameSet.clear();
+        groupManager = new GroupManager();
         File file = new File(getExternalFilesDir(null), "ContactInfo.txt");
+        boolean flag = false;
+        try{
+            if(!file.exists()){
+                flag = file.createNewFile();
+            }
+        }
+        catch (Exception e){
+            e.printStackTrace();
+        }
+        if(flag){  // if it's the first time to use the app
+            try(FileOutputStream fos = new FileOutputStream(file);
+                OutputStreamWriter osw = new OutputStreamWriter(fos);
+                BufferedWriter bw = new BufferedWriter(osw)) {
+                bw.write("家人\t0");
+                bw.newLine();
+                bw.write("好友\t0");
+                bw.newLine();
+            }
+            catch (Exception e){
+                e.printStackTrace();
+            }
+        }
         try(FileInputStream fis = new FileInputStream(file);
             InputStreamReader isr = new InputStreamReader(fis);
             BufferedReader br = new BufferedReader(isr)){
             String line;
             while((line = br.readLine()) != null){
                 String[] info = line.split("\\s+");
-                if(info.length == 3){
-                    mContactList.addLast(new Contact(
-                            info[0],  // name
-                            info[1],  // phone
-                            info[2]   // groupName
-                    ));
+                int n = Integer.parseInt(info[1]);
+                Group tmp = new Group(info[0]);
+                for(int i = 0; i < n; i++){
+                    line = br.readLine();
+                    info = line.split("\\s+");
+                    tmp.addPerson(new Contact(info[0], info[1], info[2], info[3], info[4], info[5], info[6]));
                 }
-                else if(info.length == 4){
-
-                }
-                groupNameSet.add(info[2]);
+                groupManager.addSingleteam(tmp);
             }
         }
         catch (Exception e){
             toastPrint("init contact failed:(\n"+ e.getMessage()+"\n" + e.getLocalizedMessage());
-            System.out.println("------------------------------------------------------------------------------");
             e.printStackTrace();
-            System.out.println("------------------------------------------------------------------------------");
         }
-        groupManager = new GroupManager(groupNameSet);
     }
 
     public void init(){
@@ -315,13 +341,13 @@ public class MainActivity extends AppCompatActivity {
         Toast.makeText(this, message, Toast.LENGTH_LONG).show();
     }
 
-    public void ActivateSearchName(View view) {
-        mode = 1;
-        onSearchRequested();
-    }
-
-    public void ActivateSearchPhone(View view) {
-        mode = 2;
-        onSearchRequested();
-    }
+//    public void ActivateSearchName(View view) {
+//        mode = 1;
+//        onSearchRequested();
+//    }
+//
+//    public void ActivateSearchPhone(View view) {
+//        mode = 2;
+//        onSearchRequested();
+//    }
 }

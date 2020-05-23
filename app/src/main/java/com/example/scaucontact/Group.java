@@ -1,17 +1,17 @@
 package com.example.scaucontact;
 
-import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.LinkedList;
 
 public class Group {
-	private ArrayList<Contact>steam=new ArrayList<Contact>();//单个分组存储联系人
+	private LinkedList<Contact>steam=new LinkedList<>();//单个分组存储联系人
 	private String teamname;//分组名
 
 	public Group(String teamname){
 		this.teamname = teamname;
 	}
 	
-	public ArrayList<Contact> getSteam() {
+	public LinkedList<Contact> getSteam() {
 		return steam;
 	}
 
@@ -23,7 +23,7 @@ public class Group {
 		this.teamname = teamname;
 	}
 
-	public void setSteam(ArrayList<Contact> steam) {
+	public void setSteam(LinkedList<Contact> steam) {
 		this.steam = steam;
 	}
 	

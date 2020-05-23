@@ -38,6 +38,8 @@
 
         <ImageView
             android:id="@+id/contact_avatar"
+            android:paddingTop="10dp"
+            android:paddingStart="10dp"
             android:layout_width="60dp"
             android:layout_height="60dp"
             android:adjustViewBounds="true"/>
