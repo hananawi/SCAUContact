@@ -1,6 +1,7 @@
 package com.example.scaucontact;
 
 import java.util.Date;
+import java.util.LinkedList;
 
 public class Contact {
     private String name; 
@@ -13,6 +14,8 @@ public class Contact {
     private String zipCode;
     private String remarks;
     private boolean delete = false;
+    private boolean display = false;
+    private LinkedList<String> groups;
 
 
 //    public Date getBirthday() {
@@ -31,6 +34,29 @@ public class Contact {
 //	public void setAvatarSource(int avatarSource) {
 //		this.avatarSource = avatarSource;
 //	}
+
+	@Override
+	public boolean equals(Object obj){
+		if(obj instanceof Contact){
+			Contact tmp = (Contact)obj;
+			return tmp.name.equals(name) && tmp.phone.equals(phone);
+		}
+		return false;
+	}
+
+	public LinkedList<String> getGroups(){
+		return groups;
+	}
+	public void setGroups(LinkedList<String> groups){
+		this.groups = groups;
+	}
+
+	public boolean getDisplay(){
+		return display;
+	}
+	public void setDisplay(boolean display){
+		this.display = display;
+	}
 
 	public boolean getDelete(){
 		return delete;
@@ -95,7 +121,7 @@ public class Contact {
     }
    
     public Contact(String name, String phone, String email, String workUnit,
-				   String address, String zipCode, String remarks) {
+				   String address, String zipCode, String remarks, LinkedList<String> groups) {
 		super();
 		this.name = name;
 		this.phone = phone;
@@ -104,6 +130,7 @@ public class Contact {
 		this.workUnit = workUnit;
 		this.zipCode = zipCode;
 		this.remarks = remarks;
+		this.groups = groups;
 	}
     @Override
     public String toString(){

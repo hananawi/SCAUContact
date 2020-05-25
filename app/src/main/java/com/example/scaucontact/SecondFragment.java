@@ -1,10 +1,10 @@
 package com.example.scaucontact;
 
 import android.app.AlertDialog;
+import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.graphics.drawable.Drawable;
-import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -20,22 +20,20 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.RequiresApi;
 import androidx.core.content.res.ResourcesCompat;
 import androidx.fragment.app.Fragment;
 
-import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.LinkedList;
 
 interface GetContactInfo{
-    Contact work();
+    Contact work();  // contact
+    String work2();  // groupName
+    int work3();  // mode
 }
 
 public class SecondFragment extends Fragment
@@ -48,6 +46,7 @@ public class SecondFragment extends Fragment
     private EditText address;
     private EditText zipCode;
     private EditText remarks;
+    private TextView groupName;
 
     private GetContactInfo getContactInfo;
     private Contact contact;
@@ -111,6 +110,35 @@ public class SecondFragment extends Fragment
             contact = getContactInfo.work();
             name.setText(contact.getName());
             phone.setText(contact.getPhone());
+            if(!contact.getEmail().equals("null")){
+                email.setText(contact.getEmail());
+            }
+            if(!contact.getWorkUnit().equals("null")){
+                workUnit.setText(contact.getWorkUnit());
+            }
+            if(!contact.getAddress().equals("null")){
+                address.setText(contact.getAddress());
+            }
+            if(!contact.getZipCode().equals("null")){
+                zipCode.setText(contact.getZipCode());
+            }
+            if(!contact.getRemarks().equals("null")){
+                remarks.setText(contact.getRemarks());
+            }
+            String tmp = "";
+            for(String i: contact.getGroups()){
+                tmp += i+",";
+            }
+            groupName.setText(tmp);
+            for(int i = 0; i < groupManager.getAllGroupName().length; i++){
+                for(String j: contact.getGroups()){
+                    if(j.equals(groupManager.getAllGroupName()[i])){
+                        selectedItems.add(i);
+                        checkedItems[i] = true;
+                        break;
+                    }
+                }
+            }
         }
 
 //        view.findViewById(R.id.save_confirm).setOnClickListener(new View.OnClickListener() {
@@ -176,15 +204,16 @@ public class SecondFragment extends Fragment
             BufferedWriter bw = new BufferedWriter(osw)){
             String line;
 
-            int n = 0;
             for(Group i: groupManager.getAteam()){
+                boolean flag = true;
                 for(Contact j: i.getSteam()){
-                    if(j.getDelete()) n++;
+                    if(j.getDelete()){
+                        flag = false;
+                        break;
+                    }
                 }
-            }
-
-            for(Group i: groupManager.getAteam()){
-                bw.write(i.getTeamname()+"\t"+(i.getSteam().size()-n));
+                if(flag) bw.write(i.getTeamname()+"\t"+(i.getSteam().size()));
+                else bw.write(i.getTeamname()+"\t"+(i.getSteam().size()-1));
                 bw.newLine();
                 for(Contact j: i.getSteam()){
                     if(j.getDelete()) continue;
@@ -195,6 +224,9 @@ public class SecondFragment extends Fragment
                     line += j.getAddress()+"\t";
                     line += j.getZipCode()+"\t";
                     line += j.getRemarks()+"\t";
+                    for(String k: j.getGroups()){
+                        line += k+"\t";
+                    }
                     // birthday
                     bw.write(line);
                     bw.newLine();
@@ -204,6 +236,7 @@ public class SecondFragment extends Fragment
         }
         catch (Exception e){
             toastPrint("Write File Failed:(");
+            e.printStackTrace();
             return false;
         }
     }
@@ -218,8 +251,12 @@ public class SecondFragment extends Fragment
         String mAddress = address.getText().toString();
         String mZipCode = zipCode.getText().toString();
         String mRemarks = remarks.getText().toString();
+        LinkedList<String> groups = new LinkedList<>();
+        for(int i: selectedItems){
+            groups.add(groupManager.getAllGroupName()[i]);
+        }
         if(mode == 0){  // 新建联系人
-            return new Contact(mName, mPhone, mEmail, mWorkUnit, mAddress, mZipCode, mRemarks);
+            return new Contact(mName, mPhone, mEmail, mWorkUnit, mAddress, mZipCode, mRemarks, groups);
         }
         else{  // 编辑现有联系人
             contact.setName(mName);
@@ -229,6 +266,7 @@ public class SecondFragment extends Fragment
             contact.setAddress(mAddress);
             contact.setZipCode(mZipCode);
             contact.setRemarks(mRemarks);
+            contact.setGroups(groups);
             return contact;
         }
     }
@@ -242,6 +280,7 @@ public class SecondFragment extends Fragment
         zipCode = view.findViewById(R.id.edit_zipcode);
         remarks = view.findViewById(R.id.edit_remark);
         chooseGroup = view.findViewById(R.id.choose_group);
+        groupName = view.findViewById(R.id.group_name);
     }
 
     private void createAlertDialog(){
@@ -259,7 +298,7 @@ public class SecondFragment extends Fragment
                                 for(int i: selectedItems){
                                     tmp += groupManager.getAllGroupName()[i]+", ";
                                 }
-                                ((TextView)view.findViewById(R.id.group_name)).setText(tmp);
+                                groupName.setText(tmp);
                             }
                         })
                         .setNegativeButton("取消", new DialogInterface.OnClickListener() {
@@ -321,7 +360,9 @@ public class SecondFragment extends Fragment
 
         confirmButton.setIcon(drawable);
         confirmButton.setVisible(true);
-        deleteButton.setVisible(true);
+        if(getContactInfo != null){
+            deleteButton.setVisible(true);
+        }
         menu.findItem(R.id.search).setVisible(false);
         menu.findItem(R.id.action_settings).setVisible(false);
         menu.findItem(R.id.export_to_csv).setVisible(false);
@@ -335,10 +376,11 @@ public class SecondFragment extends Fragment
                 else{  // 编辑已有的联系人
                     contact = getContactInfo(1);
                 }
+
                 for(int i: selectedItems){  // 把联系人添加进选中的组别中
-                    Group tmp = groupManager.getAteam().get(i);
-                    if(!tmp.getSteam().contains(contact)){
-                        tmp.addPerson(contact);
+                    Group group = groupManager.getAteam().get(i);
+                    if(!group.getSteam().contains(contact)){
+                        group.addPerson(contact);
                     }
                 }
 
@@ -361,9 +403,31 @@ public class SecondFragment extends Fragment
         deleteButton.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
                     @Override
                     public boolean onMenuItemClick(MenuItem item) {
-                        getContactInfo.work().setDelete(true);
-                        writeExternalFile("ContactInfo.txt");
-                        ((MainActivity)getActivity()).init();
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+                        builder.setTitle("确认删除吗？")
+                                .setPositiveButton("确认", new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialog, int which) {
+                                        for(Group i: groupManager.getAteam()){
+                                            if((getContactInfo.work3() == 0 && getContactInfo.work2() == null) ||
+                                                    getContactInfo.work2().equals(i.getTeamname())){
+                                                for(Contact j: i.getSteam()){
+                                                    if(j.equals(contact)){
+                                                        j.setDelete(true);
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        writeExternalFile("ContactInfo.txt");
+                                        ((MainActivity)getActivity()).init();
+                                    }
+                                })
+                                .setNegativeButton("取消", new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialog, int which) {
+
+                                    }
+                                }).create().show();
                         return true;
                     }
                 });

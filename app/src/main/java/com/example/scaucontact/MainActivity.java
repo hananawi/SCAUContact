@@ -36,6 +36,7 @@ import java.io.FileOutputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.util.LinkedList;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -164,8 +165,8 @@ public class MainActivity extends AppCompatActivity {
             BufferedWriter bw = new BufferedWriter(osw)){
             for(Group i: groupManager.getAteam()){
                 for(Contact j: i.getSteam()){
-                    bw.write(j.getName()+"\t"+j.getPhone()+"\t"+j.getEmail()+"\t"+j.getWorkUnit()
-                            +j.getAddress()+"\t"+j.getZipCode()+"\t"+j.getRemarks()+"\t");
+                    bw.write(j.getName()+","+j.getPhone()+","+j.getEmail()+","+j.getWorkUnit()+","
+                            +j.getAddress()+","+j.getZipCode()+","+j.getRemarks()+",");
                     bw.newLine();
                 }
             }
@@ -230,7 +231,7 @@ public class MainActivity extends AppCompatActivity {
         int id = item.getItemId();
         //noinspection SimplifiableIfStatement
         if(id == R.id.export_to_csv){  // export csv file
-            createFile("text/plain", "ContactInfo.csv");
+            createFile("text/csv", "ContactInfo.csv");
             return true;
         }
         else if(id == R.id.action_settings){
@@ -312,7 +313,11 @@ public class MainActivity extends AppCompatActivity {
                 for(int i = 0; i < n; i++){
                     line = br.readLine();
                     info = line.split("\\s+");
-                    tmp.addPerson(new Contact(info[0], info[1], info[2], info[3], info[4], info[5], info[6]));
+                    LinkedList<String> groups = new LinkedList<>();
+                    for(int j = 7; j < info.length; j++){
+                        groups.add(info[j]);
+                    }
+                    tmp.addPerson(new Contact(info[0], info[1], info[2], info[3], info[4], info[5], info[6], groups));
                 }
                 groupManager.addSingleteam(tmp);
             }

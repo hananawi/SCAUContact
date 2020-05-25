@@ -26,14 +26,18 @@ public class ContactListAdapter extends RecyclerView.Adapter<ContactListAdapter.
     private LinkedList<Contact> mContactList;
     private LayoutInflater mInflater;
     private Context mContext;
+    private String groupName;
+    private int mode;
 
     private FragmentTransaction transaction;
 
 
-    public ContactListAdapter(Context context, LinkedList<Contact> mContactList){
+    public ContactListAdapter(Context context, LinkedList<Contact> mContactList, int mode, String groupName){
         this.mContactList = mContactList;
         this.mInflater = LayoutInflater.from(context);
         this.mContext = context;
+        this.groupName = groupName;
+        this.mode = mode;
     }
 
     public void setOnEditButtonClickListener(FragmentTransaction transaction){
@@ -76,6 +80,14 @@ public class ContactListAdapter extends RecyclerView.Adapter<ContactListAdapter.
                 @Override
                 public Contact work() {
                     return mContactList.get(getLayoutPosition());
+                }
+                @Override
+                public String work2(){
+                    return groupName;
+                }
+                @Override
+                public int work3(){
+                    return mode;
                 }
             });
             transaction.replace(R.id.fragment_container, secondFragment);

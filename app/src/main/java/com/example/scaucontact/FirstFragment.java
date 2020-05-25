@@ -90,13 +90,14 @@ public class FirstFragment extends Fragment {
 
     // mode 0: groupName, mode 1: contactName, mode 2: contactPhone
     private LinkedList<Contact> chooseContact(GroupManager groupManager, String keyWord, int mode){
-        Log.d("nmslTag", "chooseContact: change contact");
         LinkedList<Contact> ret = new LinkedList<>();
         if(mode == 0){
             if(keyWord == null){  // return all Contacts
-                return groupManager.getAllContacts();
+                ret =  groupManager.getAllContacts();
             }
-            return groupManager.getSingleteam(keyWord).getSteam();
+            else{
+                ret =  groupManager.getSingleteam(keyWord).getSteam();
+            }
         }
         else if(mode == 1){
             char[] tmp = keyWord.toCharArray();
@@ -112,7 +113,20 @@ public class FirstFragment extends Fragment {
                 }
             }
         }
-        return ret;
+        LinkedList<Contact> ret2 = new LinkedList<>();
+        boolean flag = true;
+        for(Contact i: ret){
+            for(Contact j: ret2){
+                if(i.equals(j)){
+                    flag = false;
+                    break;
+                }
+            }
+            if(flag){
+                ret2.add(i);
+            }
+        }
+        return ret2;
     }
 
     private void initContactList(@NonNull View view){
@@ -121,7 +135,7 @@ public class FirstFragment extends Fragment {
         mContactList = chooseContact(((MainActivity)fragmentActivity).groupManager, keyWord, mode);
 
         mRecyclerView = view.findViewById(R.id.contact_recyclerview);
-        mAdapter = new ContactListAdapter(view.getContext(), mContactList);
+        mAdapter = new ContactListAdapter(view.getContext(), mContactList, mode, keyWord);
         mRecyclerView.setAdapter(mAdapter);
         mRecyclerView.setLayoutManager(new LinearLayoutManager(view.getContext()));
 
