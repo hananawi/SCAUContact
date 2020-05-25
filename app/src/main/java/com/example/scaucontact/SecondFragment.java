@@ -391,7 +391,8 @@ public class SecondFragment extends Fragment
 //                        imm.toggleSoftInput(0, InputMethodManager.HIDE_NOT_ALWAYS);  // 打开软件盘
                         imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
                     }
-                    toastPrint("联系人创建成功");
+                    if(getContactInfo == null) toastPrint("联系人创建成功");
+                    else toastPrint("联系人修改成功");
 //                    NavHostFragment.findNavController(SecondFragment.this)
 //                            .navigate(R.id.action_SecondFragment_to_FirstFragment);
                     ((MainActivity)getActivity()).init();

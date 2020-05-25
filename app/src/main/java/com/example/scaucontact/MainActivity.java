@@ -163,12 +163,21 @@ public class MainActivity extends AppCompatActivity {
         try(OutputStream os = getContentResolver().openOutputStream(uri);
             OutputStreamWriter osw = new OutputStreamWriter(os);
             BufferedWriter bw = new BufferedWriter(osw)){
-            for(Group i: groupManager.getAteam()){
-                for(Contact j: i.getSteam()){
-                    bw.write(j.getName()+","+j.getPhone()+","+j.getEmail()+","+j.getWorkUnit()+","
-                            +j.getAddress()+","+j.getZipCode()+","+j.getRemarks()+",");
-                    bw.newLine();
+            LinkedList<Contact> ret = new LinkedList<>();
+            for(Contact i: groupManager.getAllContacts()){
+                boolean flag = true;
+                for(Contact j: ret){
+                    if(i.equals(j)){
+                        flag = false;
+                        break;
+                    }
                 }
+                if(flag) ret.add(i);
+            }
+            for(Contact i: ret){
+                bw.write(i.getName()+","+i.getPhone()+","+i.getEmail()+","+i.getWorkUnit()+","
+                        +i.getAddress()+","+i.getZipCode()+","+i.getRemarks()+",");
+                bw.newLine();
             }
         }
         catch (Exception e){
